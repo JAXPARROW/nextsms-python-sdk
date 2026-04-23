@@ -156,7 +156,7 @@ class SMSMixin:
         if not message_id or not message_id.strip():
             raise NextSMSValidationError("message_id cannot be empty")
 
-        response = self.http.request("GET", f"api/sms/v1/logs?messageId={message_id}")
+        response = self.http.request("GET", f"api/sms/v1/reports?messageId={message_id}")
         return self._handle_response(response)
 
     # ------------------------------------------------------------------
