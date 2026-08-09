@@ -139,15 +139,35 @@ class SMSMixin:
     def get_message_status(
         self: "NextSMSClient",
         message_id: str,
+        to: Optional[str] = None,
+        sent_since: Optional[str] = None,
+        sent_until: Optional[str] = None,
+        limit: int = 100,
     ) -> NextSMSResponse:
         """
         Retrieve delivery status for a previously sent message.
 
+        NextSMS has no "look up this one messageId" endpoint — the real API
+        (GET /api/sms/v1/logs) only supports filtering by sender (`from`),
+        recipient (`to`), a sent-date range, and pagination; each returned
+        log entry carries its own `messageId`. This fetches a page of logs
+        and picks out the matching entry client-side.
+
+        Narrowing with `to` (and ideally `sent_since`/`sent_until`) is
+        strongly recommended on any account with real send volume — without
+        it, the target message can fall outside the fetched page and look
+        like "not found" even though it exists.
+
         Args:
             message_id: The message_id returned by send_sms
+            to: Recipient number to narrow the search (recommended)
+            sent_since: Lower bound on send date, e.g. "2020-02-01"
+            sent_until: Upper bound on send date, e.g. "2020-02-20"
+            limit: Max log entries to scan for a match (API max: 500)
 
         Returns:
-            NextSMSResponse with status, status_code, delivered_at, sent_at in .data
+            NextSMSResponse whose .data["results"] holds either the one
+            matching log entry, or is empty if it wasn't in the fetched page.
 
         Raises:
             NextSMSValidationError: message_id is empty
@@ -156,8 +176,25 @@ class SMSMixin:
         if not message_id or not message_id.strip():
             raise NextSMSValidationError("message_id cannot be empty")
 
-        response = self.http.request("GET", f"api/sms/v1/reports?messageId={message_id}")
-        return self._handle_response(response)
+        params: dict = {"limit": limit}
+        if to:
+            params["to"] = to
+        if sent_since:
+            params["sentSince"] = sent_since
+        if sent_until:
+            params["sentUntil"] = sent_until
+
+        response = self.http.request("GET", "api/sms/v1/logs", params=params)
+        result = self._handle_response(response)
+
+        if result.success:
+            match = next(
+                (r for r in result.data.get("results", []) if str(r.get("messageId")) == str(message_id)),
+                None,
+            )
+            result.data = {"results": [match] if match else []}
+
+        return result
 
     # ------------------------------------------------------------------
     # Account balance

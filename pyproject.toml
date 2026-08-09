@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nextsms-python-sdk"
-version = "0.1.1"
+version = "0.1.2"
 description = "Enterprise-ready Python SDK for the NextSMS API (Tanzania)"
 readme = "README.md"
 license = {text = "MIT"}

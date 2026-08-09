@@ -170,13 +170,47 @@ class TestGetMessageStatus:
     def setup_method(self):
         self.client = _make_client()
 
-    def test_calls_correct_endpoint(self):
+    def test_calls_logs_endpoint_without_filters(self):
         self.client.get_message_status("msg_123")
-        self.client.http.request.assert_called_once_with("GET", "api/sms/v1/logs?messageId=msg_123")
+        self.client.http.request.assert_called_once_with(
+            "GET", "api/sms/v1/logs", params={"limit": 100}
+        )
+
+    def test_calls_logs_endpoint_with_filters(self):
+        self.client.get_message_status(
+            "msg_123", to="255712345678", sent_since="2020-02-01", sent_until="2020-02-20", limit=5
+        )
+        self.client.http.request.assert_called_once_with(
+            "GET", "api/sms/v1/logs",
+            params={"limit": 5, "to": "255712345678", "sentSince": "2020-02-01", "sentUntil": "2020-02-20"},
+        )
 
     def test_empty_message_id_raises(self):
         with pytest.raises(NextSMSValidationError, match="empty"):
             self.client.get_message_status("")
+
+    def test_filters_results_to_matching_message_id(self):
+        self.client._handle_response = Mock(
+            return_value=NextSMSResponse(
+                success=True, status_code=200, message="OK",
+                data={"results": [
+                    {"messageId": "other", "status": {"groupName": "DELIVERED"}},
+                    {"messageId": "msg_123", "status": {"groupName": "PENDING"}},
+                ]},
+            )
+        )
+        result = self.client.get_message_status("msg_123")
+        assert result.data["results"] == [{"messageId": "msg_123", "status": {"groupName": "PENDING"}}]
+
+    def test_no_match_returns_empty_results(self):
+        self.client._handle_response = Mock(
+            return_value=NextSMSResponse(
+                success=True, status_code=200, message="OK",
+                data={"results": [{"messageId": "other", "status": {"groupName": "DELIVERED"}}]},
+            )
+        )
+        result = self.client.get_message_status("msg_123")
+        assert result.data["results"] == []
 
 
 class TestGetBalance:
