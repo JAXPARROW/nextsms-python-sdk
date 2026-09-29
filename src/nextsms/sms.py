@@ -197,6 +197,55 @@ class SMSMixin:
         return result
 
     # ------------------------------------------------------------------
+    # Bulk log fetch (many messages, one request)
+    # ------------------------------------------------------------------
+
+    def get_logs(
+        self: "NextSMSClient",
+        to: Optional[str] = None,
+        sent_since: Optional[str] = None,
+        sent_until: Optional[str] = None,
+        limit: int = 500,
+    ) -> NextSMSResponse:
+        """
+        Fetch a page of raw send-log entries — the same underlying data
+        `get_message_status()` scans for a single messageId, but returned
+        as-is so a caller checking many messages at once can match them
+        all against one response instead of issuing one request per
+        message.
+
+        Without `to`, this returns the account's own most recent log
+        entries (observed in practice: several hundred entries spanning
+        many recipients from one call) rather than anything scoped to a
+        single recipient — useful for a delivery-status sweep across many
+        outstanding messages, where most targets are recent enough to
+        appear in this one page. Any messageId not found here may still
+        be resolved with a narrower `get_message_status(message_id, to=...)`
+        call, which is more reliable for older messages but costs one
+        request each.
+
+        Args:
+            to: Recipient number to narrow the search (omit for account-wide)
+            sent_since: Lower bound on send date, e.g. "2020-02-01"
+            sent_until: Upper bound on send date, e.g. "2020-02-20"
+            limit: Max log entries to return (API max: 500)
+
+        Returns:
+            NextSMSResponse whose .data["results"] is the raw list of log
+            entries (each with its own "messageId"), unfiltered.
+        """
+        params: dict = {"limit": limit}
+        if to:
+            params["to"] = to
+        if sent_since:
+            params["sentSince"] = sent_since
+        if sent_until:
+            params["sentUntil"] = sent_until
+
+        response = self.http.request("GET", "api/sms/v1/logs", params=params)
+        return self._handle_response(response)
+
+    # ------------------------------------------------------------------
     # Account balance
     # ------------------------------------------------------------------
 

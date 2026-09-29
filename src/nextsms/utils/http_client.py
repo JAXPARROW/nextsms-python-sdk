@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 BASE_URL = "https://messaging-service.co.tz"
 TEST_BASE_URL = "https://messaging-service.co.tz/test"
-SDK_VERSION = "0.1.0"
+SDK_VERSION = "0.1.3"
 
 
 class PooledHTTPClient:

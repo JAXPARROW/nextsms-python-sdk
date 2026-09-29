@@ -213,6 +213,39 @@ class TestGetMessageStatus:
         assert result.data["results"] == []
 
 
+class TestGetLogs:
+    def setup_method(self):
+        self.client = _make_client()
+
+    def test_calls_logs_endpoint_without_filters(self):
+        self.client.get_logs()
+        self.client.http.request.assert_called_once_with(
+            "GET", "api/sms/v1/logs", params={"limit": 500}
+        )
+
+    def test_calls_logs_endpoint_with_filters(self):
+        self.client.get_logs(
+            to="255712345678", sent_since="2020-02-01", sent_until="2020-02-20", limit=50
+        )
+        self.client.http.request.assert_called_once_with(
+            "GET", "api/sms/v1/logs",
+            params={"limit": 50, "to": "255712345678", "sentSince": "2020-02-01", "sentUntil": "2020-02-20"},
+        )
+
+    def test_returns_results_unfiltered(self):
+        self.client._handle_response = Mock(
+            return_value=NextSMSResponse(
+                success=True, status_code=200, message="OK",
+                data={"results": [
+                    {"messageId": "a", "status": {"groupName": "DELIVERED"}},
+                    {"messageId": "b", "status": {"groupName": "SENT"}},
+                ]},
+            )
+        )
+        result = self.client.get_logs()
+        assert len(result.data["results"]) == 2
+
+
 class TestGetBalance:
     def setup_method(self):
         self.client = _make_client()
