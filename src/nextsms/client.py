@@ -6,7 +6,12 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from .utils.http_client import BASE_URL, TEST_BASE_URL, PooledHTTPClient
+from .utils.http_client import (
+    BASE_URL,
+    DEFAULT_BACKOFF_FACTOR,
+    TEST_BASE_URL,
+    PooledHTTPClient,
+)
 from .exceptions import (
     NextSMSAPIError,
     NextSMSAuthenticationError,
@@ -79,6 +84,7 @@ class NextSMSClient:
         pool_connections: int = 10,
         pool_maxsize: int = 100,
         logger: Optional[logging.Logger] = None,
+        backoff_factor: float = DEFAULT_BACKOFF_FACTOR,
     ):
         """
         Args:
@@ -86,10 +92,16 @@ class NextSMSClient:
             password: NextSMS account password
             test_mode: When True, uses the sandbox URL — no real SMS sent
             timeout: Per-request timeout in seconds
-            max_retries: Maximum retry attempts for transient failures
+            max_retries: Maximum automatic retries for transient failures;
+                0 disables automatic retries entirely. POST requests (sending
+                SMS) are only retried when NextSMS certainly did not process
+                them (connection never established, or HTTP 429).
             pool_connections: Number of urllib3 connection pools to cache
             pool_maxsize: Maximum connections per pool
             logger: Optional custom logger
+            backoff_factor: Wait ``backoff_factor * 2 ** (n - 1)`` seconds
+                before the n-th retry (default 2.0 -> 2 s, 4 s, 8 s; capped at
+                30 s). A ``Retry-After`` header from the server takes precedence.
         """
         self.username = username
         self.test_mode = test_mode
@@ -105,6 +117,7 @@ class NextSMSClient:
             max_retries=max_retries,
             pool_connections=pool_connections,
             pool_maxsize=pool_maxsize,
+            backoff_factor=backoff_factor,
             logger=self.logger,
         )
 

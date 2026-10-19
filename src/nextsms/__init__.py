@@ -14,6 +14,7 @@ from .exceptions import (
     NextSMSInsufficientBalanceError,
     NextSMSInvalidSenderError,
     NextSMSConnectionError,
+    NextSMSAmbiguousResponseError,
     NextSMSServerError,
 )
 
@@ -51,7 +52,7 @@ class NextSMS(NextSMSClient, SMSMixin, ResellerMixin):
     """
 
 
-__version__ = "0.1.3"
+__version__ = "0.2.0"
 
 __all__ = [
     "NextSMS",
@@ -65,5 +66,6 @@ __all__ = [
     "NextSMSInsufficientBalanceError",
     "NextSMSInvalidSenderError",
     "NextSMSConnectionError",
+    "NextSMSAmbiguousResponseError",
     "NextSMSServerError",
 ]

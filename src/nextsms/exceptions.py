@@ -47,6 +47,25 @@ class NextSMSConnectionError(NextSMSError):
     pass
 
 
+class NextSMSAmbiguousResponseError(NextSMSConnectionError):
+    """
+    A non-idempotent request (e.g. sending an SMS) was sent, but no complete
+    response came back (read timeout, connection reset while waiting).
+
+    NextSMS may or may not have processed it, so the SDK did NOT retry it
+    automatically (that could deliver and bill a duplicate SMS). Check the
+    delivery logs / reports before deciding to resend.
+
+    Subclasses NextSMSConnectionError so existing ``except`` clauses keep working.
+    """
+    pass
+
+
 class NextSMSServerError(NextSMSAPIError):
-    """NextSMS server error (HTTP 5xx)"""
+    """
+    NextSMS server error (HTTP 5xx).
+
+    For POST requests (sending SMS, reseller transfers) this is not retried
+    automatically: the server may have processed the request before failing.
+    """
     pass

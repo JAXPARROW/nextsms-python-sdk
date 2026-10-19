@@ -45,7 +45,10 @@ class SMSMixin:
             NextSMSValidationError: Invalid sender_id, recipient, or message
             NextSMSAuthenticationError: Wrong credentials
             NextSMSInsufficientBalanceError: Not enough SMS credits
-            NextSMSRateLimitError: Too many requests
+            NextSMSRateLimitError: Too many requests (after retries)
+            NextSMSServerError: HTTP 5xx (not retried; the SMS may have been sent)
+            NextSMSAmbiguousResponseError: Sent, but no response arrived (not
+                retried; check delivery logs before resending)
         """
         self._validate_sender_id(sender_id)
         if not message or not message.strip():
@@ -99,6 +102,9 @@ class SMSMixin:
         Raises:
             NextSMSValidationError: Any input is invalid
             NextSMSInsufficientBalanceError: Not enough SMS credits
+            NextSMSServerError: HTTP 5xx (not retried; the SMS may have been sent)
+            NextSMSAmbiguousResponseError: Sent, but no response arrived (not
+                retried; check delivery logs before resending)
         """
         self._validate_sender_id(sender_id)
         if not message or not message.strip():
