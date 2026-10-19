@@ -188,7 +188,7 @@ bool(resp)        # True if success
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.10+
 - `requests >= 2.25.0`
 - `urllib3 >= 1.26.0`
 
@@ -217,7 +217,10 @@ will now get an exception instead and must decide itself whether to resend
 - **New `backoff_factor` option** on `NextSMS` / `NextSMSClient` (default `2.0`).
 - **`max_retries=0`** now cleanly disables every automatic retry, for
   applications that own their retry policy. Negative values raise `ValueError`.
-- `urllib3>=1.26.0` is now an explicit dependency (the SDK already required it).
+- **Secure dependency floors**: `requests>=2.33.0` and `urllib3>=2.8.0` (the
+  lowest versions with no known vulnerabilities as of release); `urllib3` is now
+  an explicit dependency. These need **Python 3.10+**, so Python 3.8 / 3.9
+  (both end-of-life) are no longer supported.
 
 ### 0.1.3
 
